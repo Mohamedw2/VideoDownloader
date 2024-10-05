@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>تحميل الفيديو</title>
+</head>
+<body>
+    <div class="container">
+        <h1>تحميل الفيديو من أكثر من 2500 موقع</h1>
+        <h2>أدخل رابط الفيديو:</h2>
+        <input type="text" id="videoUrl" placeholder="">
+        <button id="downloadButton">تحميل</button>
+
+        <div id="progressContainer" class="progressContainer hidden">
+            <progress id="progressBar" value="0" max="100"></progress>
+            <span id="progressText">0%</span>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <footer>
+        <p>تمت برمجة هذا الموقع من خلال محمد السعيد عبد الحافظ</p>
+        <p>جميع الحقوق محفوظة 2024</p>
+        <a href="https://www.facebook.com/100001705257626" target="_blank">
+            <img src="facebook.png" alt="صفحتنا على فيسبوك" style="width: 30px; height: 30px;">
+        </a>
+    </footer>
+
+    <script>
+        document.getElementById('downloadButton').addEventListener('click', function() {
+            const videoUrl = document.getElementById('videoUrl').value;
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const message = document.getElementById('message');
+
+            if (!videoUrl) {
+                message.textContent = "يرجى إدخال رابط الفيديو.";
+                return;
+            }
+
+            message.textContent = "";
+            progressContainer.classList.remove('hidden');
+            progressBar.value = 0;
+            progressText.textContent = '0%';
+
+            fetch(`/download`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: videoUrl })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("خطأ في تحميل الفيديو.");
+                const reader = response.body.getReader();
+                const contentLength = +response.headers.get('Content-Length');
+
+                let receivedLength = 0;
+
+                reader.read().then(function processText({ done, value }) {
+                    if (done) {
+                        message.textContent = "تم التحميل بنجاح!";
+                        return;
+                    }
+
+                    receivedLength += value.length;
+                    progressBar.value = (receivedLength / contentLength) * 100;
+                    progressText.textContent = `${Math.round((receivedLength / contentLength) * 100)}%`;
+
+                    return reader.read().then(processText);
+                });
+            })
+            .catch(error => {
+                message.textContent = error.message;
+            });
+        });
+    </script>
+</body>
+</html>
